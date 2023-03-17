@@ -32,7 +32,7 @@ public class MovieTicketImplementation {
 		protected int aPort=3800;
 		protected int vPort=3801;
 		protected int oPort=3802;
-		
+		protected final String bookingtoOtherOpen="Ticket Canceled now you can book ticket for one more slot in other server";
 		protected final String bookingSuccess="Ticket booked Successfully";
 		public MovieTicketImplementation(String serverID) throws Exception {
 			super();
@@ -482,6 +482,7 @@ public class MovieTicketImplementation {
 		 * This is a method to cancel booked movie tickets.
 		 */
 		public String cancelMovieTickets(String customerID,String movieID, String movieName,int numberOfTickets){
+			String customerFrom=customerID.substring(3);
 			String toServer=movieID.substring(0,3).toUpperCase().trim();
 			String result="";
 			String function="cancelMovieTickets";
@@ -510,7 +511,7 @@ public class MovieTicketImplementation {
 											log = "Cancel Movie Ticket";
 											Status = "Success";
 								            logWriter("Ticket Canceled for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Movie Ticket cancelled successfully ");
-											result="Ticket Canceled";
+											result="Ticket Canceled now you can book ticket for one more slot in other server";
 										}
 									}
 									else {
@@ -559,6 +560,9 @@ public class MovieTicketImplementation {
 			else if (toServer.equals("ATW")) {
 				try {
 					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, aPort,function,"","");
+					if(result.equals(bookingtoOtherOpen)) {
+						numberOfSlotsBookedInOtherServer--;
+					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -567,6 +571,9 @@ public class MovieTicketImplementation {
 			else if(toServer.equals("OUT")){
 				try {
 					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, oPort,function,"","");
+					if(result.equals(bookingtoOtherOpen)) {
+						numberOfSlotsBookedInOtherServer--;
+					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -575,6 +582,9 @@ public class MovieTicketImplementation {
 			else if(toServer.equals("VER")) {
 				try {
 					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, vPort,function,"","");
+					if(result.equals(bookingtoOtherOpen)) {
+						numberOfSlotsBookedInOtherServer--;
+					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
