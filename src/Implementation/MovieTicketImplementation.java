@@ -34,6 +34,7 @@ public class MovieTicketImplementation {
 		protected int oPort=3802;
 		protected final String bookingtoOtherOpen="Ticket Canceled now you can book ticket for one more slot in other server";
 		protected final String bookingSuccess="Ticket booked Successfully";
+		protected final String cancelSuccess="Ticket Canceled";
 		public MovieTicketImplementation(String serverID) throws Exception {
 			super();
 			this.serverID=serverID;
@@ -482,7 +483,7 @@ public class MovieTicketImplementation {
 		 * This is a method to cancel booked movie tickets.
 		 */
 		public String cancelMovieTickets(String customerID,String movieID, String movieName,int numberOfTickets){
-			String customerFrom=customerID.substring(3);
+			String customerFrom=customerID.substring(0,3);
 			String toServer=movieID.substring(0,3).toUpperCase().trim();
 			String result="";
 			String function="cancelMovieTickets";
@@ -503,7 +504,7 @@ public class MovieTicketImplementation {
 											log = "Cancel Movie Ticket";
 											Status = "Success";
 								            logWriter("Ticket Canceled for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Movie Ticket cancelled successfully ");
-											result="Ticket Canceled";
+											result=cancelSuccess;
 										}
 										else {
 											customerDataMap.get(customerID).get(movieName).remove(movieID);
@@ -511,7 +512,13 @@ public class MovieTicketImplementation {
 											log = "Cancel Movie Ticket";
 											Status = "Success";
 								            logWriter("Ticket Canceled for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Movie Ticket cancelled successfully ");
-											result="Ticket Canceled now you can book ticket for one more slot in other server";
+											if(!customerFrom.equals(this.serverID)) {
+												result=bookingtoOtherOpen;
+											}
+											else {
+												result=cancelSuccess;
+											}
+								            
 										}
 									}
 									else {
@@ -645,13 +652,28 @@ public class MovieTicketImplementation {
 										//Update movieMap
 										//bookingSuccess
 										String bookMovierequest="";
-										bookMovierequest=bookMovieTicket(customerID, newMovieID, newMovieName, numberOfTicketsToCancel);
-										if(bookMovierequest.equals(bookingSuccess)) {
-											cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
-											result="Ticket Exchanged Successfully";
+//										bookMovierequest=bookMovieTicket(customerID, newMovieID, newMovieName, numberOfTicketsToCancel);
+//										if(bookMovierequest.equals(bookingSuccess)) {
+//											cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//											result="Ticket Exchanged Successfully";
+//										}
+//										else{
+//											result=bookMovierequest;
+//										}
+										//This is cancel first
+										String cancelTicketRequest="";
+										if(customerFromServer.equals(this.serverID) && numberOfSlotsBookedInOtherServer>=3) {
+											result="Cannot exchange because this will excede allowed number of ticket to booked in other server.";
 										}
-										else{
-											result=bookMovierequest;
+										else {
+											cancelTicketRequest=cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+											if(cancelTicketRequest.equals(cancelSuccess)|| cancelTicketRequest.equals(bookingtoOtherOpen)) {
+												bookMovierequest=bookMovieTicket(customerID, newMovieID, newMovieName, numberOfTicketsToCancel);
+												result="Ticket Exchanged Successfully";
+											}
+											else{
+												result=cancelTicketRequest;
+											}
 										}
 									}
 									else {
@@ -661,56 +683,157 @@ public class MovieTicketImplementation {
 								else if(newMovieToBookServer.equals("ATW")){
 									funcationality="bookingInExchange";
 									String bookMovierequest="";
-									try {
-										bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,aPort,funcationality,newMovieName,newMovieID).trim();
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-									if(bookMovierequest.equals(bookingSuccess)) {
-										//Cancelling after successful booking
-										cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
-										result= "Ticket Exchanged Successfully";
+									String cancelTicketRequest="";
+									if(customerFromServer.equals(this.serverID) && numberOfSlotsBookedInOtherServer>=3) {
+										result="Cannot exchange because this will excede allowed number of ticket to booked in other server.";
 									}
 									else {
-										result= bookMovierequest;
+//										try {
+//											bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,aPort,funcationality,newMovieName,newMovieID).trim();
+//										} catch (IOException e) {
+//											// TODO Auto-generated catch block
+//											e.printStackTrace();
+//										}
+//										if(bookMovierequest.equals(bookingSuccess)) {
+//											//Cancelling after successful booking
+//											cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//											result= "Ticket Exchanged Successfully";
+//										}
+//										else {
+//											result= bookMovierequest;
+//										}
+										//Cancel first
+										cancelTicketRequest = cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+										if (cancelTicketRequest.equals(cancelSuccess) || cancelTicketRequest.equals(bookingtoOtherOpen) ) {
+											try {
+												sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,aPort,funcationality,newMovieName,newMovieID).trim();
+												result="Ticket Exchanged Successfully";
+												numberOfSlotsBookedInOtherServer++;
+											}
+											catch(IOException e) {
+												e.printStackTrace();
+											}
+										}
+										else {
+											result= cancelTicketRequest;
+										}
 									}
+									
 								}
 								else if(newMovieToBookServer.equals("VER")){
+//									funcationality="bookingInExchange";
+//									String bookMovierequest="";
+//									try {
+//										bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,vPort,funcationality,newMovieName,newMovieID).trim();
+//									} catch (IOException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
+//									if(bookMovierequest.equals(bookingSuccess)) {
+//										//Cancelling after successful booking
+//										cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//										result= "Ticket exchanged Successfully";
+//									}
+//									else {
+//										result= bookMovierequest;
+//									}
+//									
 									funcationality="bookingInExchange";
 									String bookMovierequest="";
-									try {
-										bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,vPort,funcationality,newMovieName,newMovieID).trim();
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-									if(bookMovierequest.equals(bookingSuccess)) {
-										//Cancelling after successful booking
-										cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
-										result= "Ticket exchanged Successfully";
+									String cancelTicketRequest="";
+									if(customerFromServer.equals(this.serverID) && numberOfSlotsBookedInOtherServer>=3) {
+										result="Cannot exchange because this will excede allowed number of ticket to booked in other server.";
 									}
 									else {
-										result= bookMovierequest;
+//										try {
+//											bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,aPort,funcationality,newMovieName,newMovieID).trim();
+//										} catch (IOException e) {
+//											// TODO Auto-generated catch block
+//											e.printStackTrace();
+//										}
+//										if(bookMovierequest.equals(bookingSuccess)) {
+//											//Cancelling after successful booking
+//											cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//											result= "Ticket Exchanged Successfully";
+//										}
+//										else {
+//											result= bookMovierequest;
+//										}
+										//Cancel first
+										cancelTicketRequest = cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+										if (cancelTicketRequest.equals(cancelSuccess) || cancelTicketRequest.equals(bookingtoOtherOpen) ) {
+											try {
+												sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,vPort,funcationality,newMovieName,newMovieID).trim();
+												result="Ticket Exchanged Successfully";
+												numberOfSlotsBookedInOtherServer++;
+											}
+											catch(IOException e) {
+												e.printStackTrace();
+											}
+										}
+										else {
+											result= cancelTicketRequest;
+										}
 									}
+									
 								}
 								else if(newMovieToBookServer.equals("OUT")){
+//									funcationality="bookingInExchange";
+//									String bookMovierequest="";
+//									try {
+//										bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,oPort,funcationality,newMovieName,newMovieID).trim();
+//									} catch (IOException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
+//									if(bookMovierequest.equals(bookingSuccess)) {
+//							
+//										//Cancelling after successful booking
+//										cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//										result= "Ticket exchanged Successfully";
+//									}
+//									else {
+//										result= bookMovierequest;
+//									}
+									
 									funcationality="bookingInExchange";
 									String bookMovierequest="";
-									try {
-										bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,oPort,funcationality,newMovieName,newMovieID).trim();
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-									if(bookMovierequest.equals(bookingSuccess)) {
-							
-										//Cancelling after successful booking
-										cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
-										result= "Ticket exchanged Successfully";
+									String cancelTicketRequest="";
+									if(customerFromServer.equals(this.serverID) && numberOfSlotsBookedInOtherServer>=3) {
+										result="Cannot exchange because this will excede allowed number of ticket to booked in other server.";
 									}
 									else {
-										result= bookMovierequest;
+//										try {
+//											bookMovierequest = sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,aPort,funcationality,newMovieName,newMovieID).trim();
+//										} catch (IOException e) {
+//											// TODO Auto-generated catch block
+//											e.printStackTrace();
+//										}
+//										if(bookMovierequest.equals(bookingSuccess)) {
+//											//Cancelling after successful booking
+//											cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+//											result= "Ticket Exchanged Successfully";
+//										}
+//										else {
+//											result= bookMovierequest;
+//										}
+										//Cancel first
+										cancelTicketRequest = cancelMovieTickets(customerID, movieID, movieName, numberOfTicketsToCancel);
+										if (cancelTicketRequest.equals(cancelSuccess) || cancelTicketRequest.equals(bookingtoOtherOpen) ) {
+											try {
+												sendRequestToServer(customerID, movieName, movieID, numberOfTicketsToCancel,oPort,funcationality,newMovieName,newMovieID).trim();
+												result="Ticket Exchanged Successfully";
+												if(customerFromServer.equals(this.serverID)) {
+													numberOfSlotsBookedInOtherServer++;
+												}
+											}
+											catch(IOException e) {
+												e.printStackTrace();
+											}
+										}
+										else {
+											result= cancelTicketRequest;
+										}
 									}
 								}
 							}
