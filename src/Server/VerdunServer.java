@@ -72,6 +72,11 @@ public class VerdunServer {
 							responseReturn=result;
 							break;
 						}
+						case "checkBookingForSameSlotForSameMovie":{
+							String result=verMovieTicketImplementation.checkBookingForSameSlotForSameMovie(userID, movieSlotID, movieName);
+							responseReturn=result;
+							break;
+						}
 						default:{
 							break;
 						}

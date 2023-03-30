@@ -35,6 +35,8 @@ public class MovieTicketImplementation {
 		protected final String bookingtoOtherOpen="Ticket Canceled now you can book ticket for one more slot in other server";
 		protected final String bookingSuccess="Ticket booked Successfully";
 		protected final String cancelSuccess="Ticket Canceled";
+		protected final String bookedInOther="Yes";
+		protected final String notBookedInOther="No";
 		public MovieTicketImplementation(String serverID) throws Exception {
 			super();
 			this.serverID=serverID;
@@ -271,30 +273,48 @@ public class MovieTicketImplementation {
 			if (this.serverID.equals(toServer)) {
 				if(movieDataMap.containsKey(movieName)) {
 					if (movieDataMap.get(movieName).containsKey(movieID)) {
-						int slotsAvailable=movieDataMap.get(movieName).get(movieID); //number of available slots
-						if (slotsAvailable>0) {
-							//whether slot is less than the number of tickets to be booked.
-							if(slotsAvailable>=numberOfTickets) {			
-								if (customerDataMap.containsKey(customerID)) {
-									if (customerDataMap.get(customerID).containsKey(movieName)) {
-										if (customerDataMap.get(customerID).get(movieName).containsKey(movieID)) {
-											int previousNumberOfTicket=customerDataMap.get(customerID).get(movieName).get(movieID); //previously booked ticket number
-											int updatedNumberOfTickets=previousNumberOfTicket+numberOfTickets;						//number of ticket of a particular user.
-											customerDataMap.get(customerID).get(movieName).put(movieID, updatedNumberOfTickets);
-											movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);
-											log = "Book Movie Ticket";
-								            Status = "Success";
-								            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" " ,numberOfTickets+ " Movie Tickets booked successfully.");
-											result=bookingSuccess;
+						boolean sameSlotBooked=checkSlotCollision(customerID,movieID,movieName);
+						if (!sameSlotBooked) {
+							int slotsAvailable=movieDataMap.get(movieName).get(movieID); //number of available slots
+							if (slotsAvailable>0) {
+								//whether slot is less than the number of tickets to be booked.
+								if(slotsAvailable>=numberOfTickets) {			
+									if (customerDataMap.containsKey(customerID)) {
+										if (customerDataMap.get(customerID).containsKey(movieName)) {
+											if (customerDataMap.get(customerID).get(movieName).containsKey(movieID)) {
+												int previousNumberOfTicket=customerDataMap.get(customerID).get(movieName).get(movieID); //previously booked ticket number
+												int updatedNumberOfTickets=previousNumberOfTicket+numberOfTickets;						//number of ticket of a particular user.
+												customerDataMap.get(customerID).get(movieName).put(movieID, updatedNumberOfTickets);
+												movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);
+												log = "Book Movie Ticket";
+									            Status = "Success";
+									            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" " ,numberOfTickets+ " Movie Tickets booked successfully.");
+												result=bookingSuccess;
+											}
+											else {
+												HashMap<String,Integer> map=new HashMap<>();
+												for(Entry<String, Integer> data : customerDataMap.get(customerID).get(movieName).entrySet()) {
+													map.put(data.getKey(), data.getValue());
+												}
+												map.put(movieID, numberOfTickets);
+												customerDataMap.get(customerID).put(movieName, map);
+												movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);	//slots deduction after booking
+												log = "Book Movie Ticket";
+									            Status = "Success";
+									            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", numberOfTickets+ " Movie Tickets booked successfully.");
+												result=bookingSuccess;
+											}
 										}
 										else {
-											HashMap<String,Integer> map=new HashMap<>();
-											for(Entry<String, Integer> data : customerDataMap.get(customerID).get(movieName).entrySet()) {
-												map.put(data.getKey(), data.getValue());
+											HashMap<String,Integer> innerMap=new HashMap<>();
+											innerMap.put(movieID, numberOfTickets);
+											HashMap <String,HashMap<String, Integer>> map=new HashMap<>();
+											for(Entry<String, HashMap<String, Integer>> data: customerDataMap.get(customerID).entrySet()) {
+												map.put(data.getKey(),data.getValue());
 											}
-											map.put(movieID, numberOfTickets);
-											customerDataMap.get(customerID).put(movieName, map);
-											movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);	//slots deduction after booking
+											map.put(movieName, innerMap);
+											customerDataMap.put(customerID, map);
+											movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);
 											log = "Book Movie Ticket";
 								            Status = "Success";
 								            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", numberOfTickets+ " Movie Tickets booked successfully.");
@@ -304,13 +324,10 @@ public class MovieTicketImplementation {
 									else {
 										HashMap<String,Integer> innerMap=new HashMap<>();
 										innerMap.put(movieID, numberOfTickets);
-										HashMap <String,HashMap<String, Integer>> map=new HashMap<>();
-										for(Entry<String, HashMap<String, Integer>> data: customerDataMap.get(customerID).entrySet()) {
-											map.put(data.getKey(),data.getValue());
-										}
-										map.put(movieName, innerMap);
-										customerDataMap.put(customerID, map);
-										movieDataMap.get(movieName).put(movieID, slotsAvailable-numberOfTickets);
+										HashMap<String,HashMap<String,Integer>> outerMap=new HashMap<>();
+										outerMap.put(movieName, innerMap);
+										customerDataMap.put(customerID, outerMap);
+										movieDataMap.get(movieName).put(movieID,slotsAvailable-numberOfTickets);
 										log = "Book Movie Ticket";
 							            Status = "Success";
 							            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", numberOfTickets+ " Movie Tickets booked successfully.");
@@ -318,32 +335,23 @@ public class MovieTicketImplementation {
 									}
 								}
 								else {
-									HashMap<String,Integer> innerMap=new HashMap<>();
-									innerMap.put(movieID, numberOfTickets);
-									HashMap<String,HashMap<String,Integer>> outerMap=new HashMap<>();
-									outerMap.put(movieName, innerMap);
-									customerDataMap.put(customerID, outerMap);
-									movieDataMap.get(movieName).put(movieID,slotsAvailable-numberOfTickets);
 									log = "Book Movie Ticket";
-						            Status = "Success";
-						            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", numberOfTickets+ " Movie Tickets booked successfully.");
-									result=bookingSuccess;
+						            Status = "Failed";
+						            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Booking failed because user tried to book more than available ");
+									result="You cannot book more than available. Only "+slotsAvailable+" seats available";
 								}
 							}
 							else {
 								log = "Book Movie Ticket";
 					            Status = "Failed";
-					            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Booking failed because user tried to book more than available ");
-								result="You cannot book more than available. Only "+slotsAvailable+" seats available";
+					            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Show Houseful ");
+								result="No Ticket available for this slot";
 							}
+							
 						}
 						else {
-							log = "Book Movie Ticket";
-				            Status = "Failed";
-				            logWriter("Ticket booking for ","Username: "+customerID+" for movie "+movieName +" for slot: "+movieID+" ", Status+" ", " Show Houseful ");
-							result="No Ticket available for this slot";
+							result="Cannot booked because same movie same slot is already booked.";
 						}
-						
 					}
 					else {
 						log = "Book Movie Ticket";
@@ -363,16 +371,7 @@ public class MovieTicketImplementation {
 			//If servers is other.
 			else if (toServer.equals("ATW")) {
 				try {
-					if (numberOfSlotsBookedInOtherServer>=3) {
-						result="You cannot Book More the three movie slots in other Server";
-					}
-					else {
-						result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, aPort,function,null,null);
-						if(result.equals(bookingSuccess)) {
-							numberOfSlotsBookedInOtherServer++;
-						}
-					}
-					
+					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, aPort,function,null,null);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -380,17 +379,7 @@ public class MovieTicketImplementation {
 			}
 			else if(toServer.equals("OUT")){
 				try {
-					if (numberOfSlotsBookedInOtherServer>=3) {
-						result="You cannot Book More the three movie slots in other Server";
-					}
-					else {
-						result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, oPort,function,null,null);
-						if(result.equals(bookingSuccess)) {
-							numberOfSlotsBookedInOtherServer++;
-						}
-					}
-					
-					
+					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, oPort,function,null,null);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -398,15 +387,7 @@ public class MovieTicketImplementation {
 			}
 			else if(toServer.equals("VER")) {
 				try {
-					if (numberOfSlotsBookedInOtherServer>=3) {
-						result="You cannot Book More the three movie slots in other Server";
-					}
-					else {
-						result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, vPort,function,null,null);
-						if(result.equals(bookingSuccess)) {
-							numberOfSlotsBookedInOtherServer++;
-						}
-					}
+					result=sendRequestToServer(customerID, movieName, movieID, numberOfTickets, vPort,function,null,null);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -884,6 +865,99 @@ public class MovieTicketImplementation {
 			}
 			
 			return result;
+		}
+		
+		public boolean checkSlotCollision(String customerID, String movieID,String movieName) {
+			String checkOne="";
+			String checkTwo="";
+			String function="checkBookingForSameSlotForSameMovie";
+			boolean collision=true;
+			if (this.serverID.equals("ATW")) {
+				try {
+					checkOne=sendRequestToServer(customerID, movieName, movieID, 0, oPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				try {
+					checkTwo=sendRequestToServer(customerID, movieName, movieID, 0, vPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (checkOne.trim().equals("No") && checkOne.trim().equals("No")) {
+					collision=false;
+				}
+				else {
+					collision=true;
+				}
+			}
+			else if (this.serverID.equals("OUT")) {
+				try {
+					checkOne=sendRequestToServer(customerID, movieName, movieID, 0, aPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				try {
+					checkTwo=sendRequestToServer(customerID, movieName, movieID, 0, vPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (checkOne.trim().equals("No") && checkOne.trim().equals("No")) {
+					collision=false;
+				}
+				else {
+					collision=true;
+				}
+			}
+			else if (this.serverID.equals("VER")) {
+				try {
+					checkOne=sendRequestToServer(customerID, movieName, movieID, 0, aPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				try {
+					checkTwo=sendRequestToServer(customerID, movieName, movieID, 0, oPort,function,null,null);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (checkOne.trim().equals("No") && checkOne.trim().equals("No")) {
+					collision=false;
+				}
+				else {
+					collision=true;
+				}
+			}
+			return collision;	
+		}
+		
+		public String checkBookingForSameSlotForSameMovie(String customerID, String movieID,String movieName) {
+			if (this.customerDataMap.containsKey(customerID)) {
+				if (this.customerDataMap.get(customerID).containsKey(movieName)) {
+					int count=0;
+					for (String data:customerDataMap.get(customerID).get(movieName).keySet()) {
+						if (data.substring(3).equals(movieID.substring(3))) {
+							count++;
+						}
+					}
+					if (count==0) {
+						return "No";
+					}
+					else {
+						return "Yes";
+					}
+				}
+				else {
+					return "No";
+				}
+			}
+			else {
+				return "No";
+			}
 		}
 
 }

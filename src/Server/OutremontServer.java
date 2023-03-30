@@ -72,6 +72,11 @@ public class OutremontServer {
 							responseReturn=result;
 							break;
 						}
+						case "checkBookingForSameSlotForSameMovie":{
+							String result=outMovieTicketImplementation.checkBookingForSameSlotForSameMovie(userID, movieSlotID, movieName);
+							responseReturn=result;
+							break;
+						}
 						default:{
 							break;
 						}
